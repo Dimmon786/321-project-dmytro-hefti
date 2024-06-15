@@ -11,7 +11,7 @@ services:
       - MYSQL_USER=mychat
       - MYSQL_PASSWORD=mychatpassword
     ports:
-      - 3300:3300
+      - 3306:3306
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -20,10 +20,10 @@ services:
     restart: always
     environment:
       - PMA_HOST=mariadb
-      - PMA_PORT=3300
+      - PMA_PORT=3306
       - MYSQL_ROOT_PASSWORD=supersecret123
     ports:
       - 9200:80
 
 volumes:
-  m321_project_mariadb:
+  m321_project_mariadb: 

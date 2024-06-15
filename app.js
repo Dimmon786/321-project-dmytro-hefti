@@ -1,22 +1,18 @@
 const express = require("express");
 const http = require("http");
-var livereload = require("livereload");
-var connectLiveReload = require("connect-livereload");
+const bodyParser = require("body-parser");
+const livereload = require("livereload");
+const connectLiveReload = require("connect-livereload");
 const { initializeWebsocketServer } = require("./server/websocketserver");
 const { initializeAPI } = require("./server/api");
-const {
-  initializeMariaDB,
-  initializeDBSchema,
-  executeSQL,
-} = require("./server/database");
+const { initializeMariaDB, initializeDBSchema, executeSQL } = require("./server/database");
 
 // Create the express server
 const app = express();
 const server = http.createServer(app);
 
-// create a livereload server
-// ONLY FOR DEVELOPMENT important to remove in production
-// by set the NODE_ENV to production
+app.use(bodyParser.json());
+
 const env = process.env.NODE_ENV || "development";
 if (env !== "production") {
   const liveReloadServer = livereload.createServer();
@@ -25,31 +21,55 @@ if (env !== "production") {
       liveReloadServer.refresh("/");
     }, 100);
   });
-  // use livereload middleware
   app.use(connectLiveReload());
 }
 
-// deliver static files from the client folder like css, js, images
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static("client"));
-// route for the homepage
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/client/index.html");
 });
-// Initialize the websocket server
+
+// User registration endpoint
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+  const users = await executeSQL('SELECT * FROM users WHERE username = ?', [username]);
+
+  if (users.length > 0) {
+    return res.json({ success: false, message: 'Username already exists.' });
+  }
+
+  await executeSQL('INSERT INTO users (username, password) VALUES (?, ?)', [username, password]);
+  res.json({ success: true });
+});
+
+// User login endpoint
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  const users = await executeSQL('SELECT * FROM users WHERE username = ? AND password = ?', [username, password]);
+
+  if (users.length === 0) {
+    return res.json({ success: false, message: 'Invalid username or password.' });
+  }
+
+  res.json({ success: true });
+});
+
 initializeWebsocketServer(server);
-// Initialize the REST api
 initializeAPI(app);
 
-// Allowing top-level await
 (async function () {
-  // Initialize the database
-  initializeMariaDB();
-  await initializeDBSchema();
-  //start the web server
-  const serverPort = process.env.PORT || 3000;
-  server.listen(serverPort, () => {
-    console.log(
-      `Express Server started on port ${serverPort} as '${env}' Environment`
-    );
-  });
+  try {
+    initializeMariaDB();
+    await initializeDBSchema();
+
+    const serverPort = process.env.PORT || 3000;
+    server.listen(serverPort, () => {
+      console.log(`Express Server started on port ${serverPort} as '${env}' Environment`);
+    });
+  } catch (error) {
+    console.error('Failed to initialize the application:', error);
+    process.exit(1);
+  }
 })();

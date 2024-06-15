@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 let pool = null;
 
 /**
@@ -17,10 +19,10 @@ let pool = null;
 const initializeMariaDB = () => {
   const mariadb = require("mariadb");
   pool = mariadb.createPool({
-    database: process.env.DB_NAME || "mychat",
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "mychat",
-    password: process.env.DB_PASSWORD || "mychatpassword",
+    database: process.env.DB_NAME,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
     connectionLimit: 5,
   });
 };
@@ -56,7 +58,8 @@ const executeSQL = async (query, params) => {
 const initializeDBSchema = async () => {
   const userTableQuery = `CREATE TABLE IF NOT EXISTS users (
     id INT NOT NULL AUTO_INCREMENT,
-    name VARCHAR(255) NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
     PRIMARY KEY (id)
   );`;
   await executeSQL(userTableQuery);

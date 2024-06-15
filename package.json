@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "connect-livereload": "^0.6.1",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "livereload": "^0.9.3",
     "mariadb": "^3.3.0",
